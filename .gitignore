@@ -133,4 +133,3 @@ dmypy.json
 /backend/media/
 /backend/static/
 /backend/dump*.json
-/backend/api/migrations/
