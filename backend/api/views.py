@@ -66,15 +66,18 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 class FavoriteViewSet(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = FavorSerializer
+    obj = Recipe
 
     def get(self, request, recipe_id):
         user = request.user
-        recipe = get_object_or_404(Recipe, id=recipe_id)
+        recipe = get_object_or_404(self.obj, id=recipe_id)
         data = {
             'author': user.id,
             'recipes': recipe.id
         }
-        serializer = FavorSerializer(data=data, context={'request': request})
+        serializer = self.serializer_class(
+            data=data, context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(
@@ -99,32 +102,20 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class ShoppingViewSet(APIView):
-    permission_classes = [IsAuthenticated]
+class ShoppingViewSet(FavoriteViewSet):
     serializer_class = ShoppingSerializer
 
-    def get(self, request, recipe_id):
-        author = request.user.id
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        data = {
-            'author': author,
-            'recipe': recipe.id
-        }
-        serializer = ShoppingSerializer(
-            data=data, context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
     def delete(self, request, recipe_id):
+        """
+        Наследовать данный метод нецелесообразно, поскольку отличается
+        не только объект, но и поля для удаления
+        """
         user = request.user
         recipe = get_object_or_404(Recipe, id=recipe_id)
         shopping_list_obj = get_object_or_404(
             ShoppingList, author=user, recipe=recipe)
         shopping_list_obj.delete()
-        return Response(
-            'Deleted', status=status.HTTP_204_NO_CONTENT)
+        return Response('Deleted', status=status.HTTP_204_NO_CONTENT)
 
 
 class AuthorViewSet(views.UserViewSet):
@@ -181,10 +172,8 @@ class ShoppingCartDL(APIView):
         """
         user = request.user
         ingredts = RecipeComponent.objects.filter(
-            recipe__author__author__author=user
+            recipe__author__author__author_id=user.id
         )
-        ingredts = Ingredient.objects.shopping_cart(user)
-
         shop_list = {}
         for ingredient in ingredts:
             amount = ingredient.amount
