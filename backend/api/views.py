@@ -1,4 +1,7 @@
 from django.http import HttpResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_cookie
 from djoser import views
 from rest_framework import status, viewsets
 from rest_framework.generics import ListAPIView, get_object_or_404
@@ -53,6 +56,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
         context.update({'request': self.request})
         return context
 
+    @method_decorator(vary_on_cookie)
+    @method_decorator(cache_page(60 * 60))
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Подключили кэширование для самых "тяжеловесных" вьюсетов
+        """
+        return super(RecipeViewSet, self).dispatch(request, *args, **kwargs)
+
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
@@ -61,6 +72,13 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     filter_class = IngredientFilter
     search_fields = ['name', ]
     pagination_class = None
+
+    @method_decorator(vary_on_cookie)
+    @method_decorator(cache_page(60 * 60))
+    def dispatch(self, request, *args, **kwargs):
+        return super(IngredientViewSet, self).dispatch(
+            request, *args, **kwargs
+        )
 
 
 class FavoriteViewSet(APIView):
@@ -123,6 +141,11 @@ class AuthorViewSet(views.UserViewSet):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
+    @method_decorator(vary_on_cookie)
+    @method_decorator(cache_page(60 * 60))
+    def dispatch(self, request, *args, **kwargs):
+        return super(AuthorViewSet, self).dispatch(request, *args, **kwargs)
+
 
 class FollowViewSet(APIView):
     permission_classes = (IsAuthenticated, )
@@ -160,6 +183,13 @@ class FollowReadViewSet(ListAPIView):
         context = super().get_serializer_context()
         context.update({'request': self.request})
         return context
+
+    @method_decorator(vary_on_cookie)
+    @method_decorator(cache_page(60 * 60))
+    def dispatch(self, request, *args, **kwargs):
+        return super(FollowReadViewSet, self).dispatch(
+            request, *args, **kwargs
+        )
 
 
 class ShoppingCartDL(APIView):
