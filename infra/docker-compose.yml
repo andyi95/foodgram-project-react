@@ -14,7 +14,7 @@ services:
 
   # Поскольку у нас нет необходимости каждый раз пересобирать фронт, то воспользуемся заранее загруженным образом с хаба
   frontend:
-    image: andyi95/foodgram_frontend:latest
+    image: andyi95/foodgram_frontend:v1.0
     volumes:
       - ../frontend/:/app/result_build/
 
