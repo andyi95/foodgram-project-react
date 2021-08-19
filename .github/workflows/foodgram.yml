@@ -76,6 +76,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             tar -xvf deploy.tar
+            cd infra/
             docker-compose stop
             docker-compose rm web
             docker pull ${{secrets.DOCKER_USERNAME }}/foodgram_project:latest
