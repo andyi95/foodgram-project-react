@@ -15,7 +15,7 @@ def init_db(apps, schema_editor):
         Tag(name='Ужин', color='#4188D2', slug='dinner'),
     ]
     Tag.objects.bulk_create(tags)
-    with open('../../data/ingredients.json', encoding='utf-8') as f:
+    with open('./data/ingredients.json', encoding='utf-8') as f:
         json_data = json.load(f)
     for row in json_data:
         Ingredient.objects.create(
