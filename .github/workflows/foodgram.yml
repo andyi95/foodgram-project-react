@@ -88,6 +88,7 @@ jobs:
             echo DB_HOST=${{ secrets.DB_HOST }} >> .env
             echo DB_PORT=${{ secrets.DB_PORT }} >> .env
             echo HOSTS_LIST=${{ secrets.HOSTS_LIST }} >> .env
+            echo DEBUG_MODE=${{ secrets.DEBUG_MODE }} >> .env
             docker-compose up -d
       - name: send telegram message
         # имхо удобнее получать оповещения о любых завершённых actions с развёрнутой информацией
