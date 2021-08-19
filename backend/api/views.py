@@ -181,7 +181,7 @@ class ShoppingCartDL(APIView):
             unit = ingredient.ingredient.units
             if name not in shop_list:
                 shop_list[name] = {
-                    'unit': unit,
+                    'units': unit,
                     'amount': amount
                 }
             else:

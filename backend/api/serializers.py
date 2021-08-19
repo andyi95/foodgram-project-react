@@ -39,6 +39,11 @@ class FollowSerializer(serializers.ModelSerializer):
 
 
 class IngredientSerializer(serializers.ModelSerializer):
+    measurement_unit = serializers.SlugRelatedField(
+        source='ingredient.units',
+        slug_field='name',
+        read_only=True
+    )
 
     class Meta:
         model = Ingredient
@@ -56,7 +61,7 @@ class IngredientReadSerializer(serializers.ModelSerializer):
         slug_field='name',
         read_only=True
     )
-    measurement_unit = serializers.SlugRelatedField(
+    measurement_units = serializers.SlugRelatedField(
         source='ingredient.units',
         slug_field='name',
         read_only=True
@@ -70,6 +75,11 @@ class IngredientReadSerializer(serializers.ModelSerializer):
 class IngredientWriteSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
     amount = serializers.IntegerField()
+    measurement_unit = serializers.SlugRelatedField(
+        source='ingredient.units',
+        slug_field='name',
+        read_only=True
+    )
 
     class Meta:
         model = Ingredient
@@ -86,13 +96,13 @@ class TagSerializer(serializers.ModelSerializer):
 class RecipeComponentSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
-    units = serializers.ReadOnlyField(
+    measurement_unit = serializers.ReadOnlyField(
         source='ingredient.units'
     )
 
     class Meta:
         model = RecipeComponent
-        fields = ('id', 'name', 'units', 'amount',)
+        fields = ('id', 'name', 'measurement_unit', 'amount',)
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):

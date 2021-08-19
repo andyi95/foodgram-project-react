@@ -12,10 +12,9 @@ services:
     env_file:
       - ./.env
 
+  # Поскольку у нас нет необходимости каждый раз пересобирать фронт, то воспользуемся заранее загруженным образом с хаба
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: andyi95/foodgram_frontend:latest
     volumes:
       - ../frontend/:/app/result_build/
 
@@ -31,6 +30,11 @@ services:
       - ../docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
       - ../docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml
     restart: always
+    depends_on:
+      - back
+      - frontend
+    env_file:
+      - ./.env
 
   back:
     build:
