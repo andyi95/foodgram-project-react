@@ -77,8 +77,7 @@ jobs:
           script: |
             tar -xvf deploy.tar
             cd infra/
-            docker-compose stop
-            docker-compose rm web
+            docker-compose down
             docker pull ${{secrets.DOCKER_USERNAME }}/foodgram_project:latest
             echo SECRET_KEY="${{ secrets.SECRET_KEY }}" > .env
             echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
