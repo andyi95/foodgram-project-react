@@ -1,17 +1,18 @@
+from django.db.models import BooleanField, Count, Exists, OuterRef, Sum, Value
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_cookie
-from django.db.models import Exists, OuterRef, Sum, Value, Count
 from djoser import views
 from rest_framework import status, viewsets
 from rest_framework.generics import ListAPIView, get_object_or_404
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (AllowAny, IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import User
 from users.serializers import UserSerializer
-from django.db.models import Value, BooleanField
+
 from api.filters import IngredientFilter, RecipeFilter
 from api.models import (FavorRecipes, Follow, Ingredient, Recipe,
                         RecipeComponent, ShoppingList, Tag)
@@ -45,19 +46,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
-        # ingredients = serializer.validated_data.pop('ingredients')
-        # tags = serializer.validated_data.pop('tags')
-        # recipe = Recipe.objects.create(**serializer.validated_data, author=self.request.user)
-        # recipe.tags.set(tags)
-        # ingredients_to_save = []
-        # for ingredient in ingredients:
-        #     ing_instance = get_object_or_404(Ingredient, id=ingredient['id'])
-        #     amt = ingredient['amount']
-        #     ingredients_to_save.append(
-        #         RecipeComponent(ingredient=ing_instance, recipe=recipe, amount=amt)
-        #     )
-        # RecipeComponent.objects.bulk_create(ingredients_to_save)
-        t = 1
         return serializer.save(author=self.request.user)
 
 
@@ -71,13 +59,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         context.update({'request': self.request})
         return context
 
-    # @method_decorator(vary_on_cookie)
-    # @method_decorator(cache_page(60 * 60))
-    # def dispatch(self, request, *args, **kwargs):
-    #     """
-    #     Подключили кэширование для самых "тяжеловесных" вьюсетов
-    #     """
-    #     return super(RecipeViewSet, self).dispatch(request, *args, **kwargs)
+    @method_decorator(vary_on_cookie)
+    @method_decorator(cache_page(60 * 60))
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Подключили кэширование для самых "тяжеловесных" вьюсетов
+        """
+        return super(RecipeViewSet, self).dispatch(request, *args, **kwargs)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -88,18 +76,20 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['name', ]
     pagination_class = None
 
-    # @method_decorator(vary_on_cookie)
-    # @method_decorator(cache_page(60 * 60))
-    # def dispatch(self, request, *args, **kwargs):
-    #     return super(IngredientViewSet, self).dispatch(
-    #         request, *args, **kwargs
-    #     )
+    @method_decorator(vary_on_cookie)
+    @method_decorator(cache_page(60 * 60))
+    def dispatch(self, request, *args, **kwargs):
+        return super(IngredientViewSet, self).dispatch(
+            request, *args, **kwargs
+        )
 
 
-class FavoriteViewSet(APIView):
+class CommonViewSet(APIView):
+    """Common viewset for creation by get and delete methods"""
     permission_classes = [IsAuthenticated]
     serializer_class = FavorSerializer
     obj = Recipe
+    del_obj = FavorRecipes
 
     def get(self, request, recipe_id):
         user = request.user
@@ -119,13 +109,18 @@ class FavoriteViewSet(APIView):
 
     def delete(self, request, recipe_id):
         user = request.user
-        favorite_obj = get_object_or_404(
-            FavorRecipes, author=user, recipes_id=recipe_id
+        deletion_obj = get_object_or_404(
+            self.del_obj, author=user, recipes_id=recipe_id
         )
-        favorite_obj.delete()
+        deletion_obj.delete()
         return Response(
             'Removed', status=status.HTTP_204_NO_CONTENT
         )
+
+
+class FavoriteViewSet(CommonViewSet):
+    obj = Recipe
+    del_obj = FavorRecipes
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -135,20 +130,10 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class ShoppingViewSet(FavoriteViewSet):
+class ShoppingViewSet(CommonViewSet):
     serializer_class = ShoppingSerializer
-
-    def delete(self, request, recipe_id):
-        """
-        Наследовать данный метод нецелесообразно, поскольку отличается
-        не только объект, но и поля для удаления
-        """
-        user = request.user
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        shopping_list_obj = get_object_or_404(
-            ShoppingList, author=user, recipe=recipe)
-        shopping_list_obj.delete()
-        return Response('Deleted', status=status.HTTP_204_NO_CONTENT)
+    obj = Recipe
+    del_obj = ShoppingList
 
 
 class AuthorViewSet(views.UserViewSet):
@@ -156,10 +141,10 @@ class AuthorViewSet(views.UserViewSet):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    # @method_decorator(vary_on_cookie)
-    # @method_decorator(cache_page(60 * 60))
-    # def dispatch(self, request, *args, **kwargs):
-    #     return super(AuthorViewSet, self).dispatch(request, *args, **kwargs)
+    @method_decorator(vary_on_cookie)
+    @method_decorator(cache_page(60 * 60))
+    def dispatch(self, request, *args, **kwargs):
+        return super(AuthorViewSet, self).dispatch(request, *args, **kwargs)
 
 
 class FollowViewSet(APIView):
@@ -197,25 +182,25 @@ class FollowReadViewSet(ListAPIView):
         отдельный запрос на признак подписки нецелесообразно - априори будет
         True
         """
-        s = User.objects.filter(
+        qs = User.objects.filter(
             following__user=self.request.user
         ).prefetch_related('recipes').annotate(
             is_subscribed=Value(True, output_field=BooleanField()),
             recipes_count=Count('recipes__author')
         )
-        return s
+        return qs
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context.update({'request': self.request})
         return context
 
-    # @method_decorator(vary_on_cookie)
-    # @method_decorator(cache_page(60 * 60))
-    # def dispatch(self, request, *args, **kwargs):
-    #     return super(FollowReadViewSet, self).dispatch(
-    #         request, *args, **kwargs
-    #     )
+    @method_decorator(vary_on_cookie)
+    @method_decorator(cache_page(60 * 60))
+    def dispatch(self, request, *args, **kwargs):
+        return super(FollowReadViewSet, self).dispatch(
+            request, *args, **kwargs
+        )
 
 
 class ShoppingCartDL(APIView):
@@ -223,29 +208,16 @@ class ShoppingCartDL(APIView):
 
     def get(self, request):
         """
-        К сожалению, полное извлечение данных с помощью аннотаций и F() не
-        осилил, но количество запросов уменьшили
+        Исправил фильтрацию, добавил аннотирование :)
         """
         user = request.user
-        ingredts = RecipeComponent.objects.filter(
-            recipe__author__author__author_id=user.id
-        )
-        shop_list = {}
-        for ingredient in ingredts:
-            amount = ingredient.amount
-            name = ingredient.ingredient.name
-            unit = ingredient.ingredient.units
-            if name not in shop_list:
-                shop_list[name] = {
-                    'units': unit,
-                    'amount': amount
-                }
-            else:
-                shop_list[name]['amount'] += amount
-        # Comprehansion применил, но без двойных кавычек тут
-        # сложновато обойтись
-        wishlist = [f'{item} - {shop_list[item]["amount"]} '
-                    f'{shop_list[item]["unit"]} \r\n' for item in shop_list]
+        qs = RecipeComponent.objects.filter(recipe__shop_list__author=user)
+        shop_list = qs.values(
+            'ingredient', 'ingredient__name', 'ingredient__units'
+        ).order_by('ingredient').annotate(sum=Sum('amount'))
+
+        wishlist = [f'{item["ingredient__name"]} - {item["sum"]} '
+                    f'{item["ingredient__units"]} \r\n' for item in shop_list]
         wishlist.append('\r\n')
         wishlist.append('FoodGram, 2021')
         response = HttpResponse(wishlist, 'Content-Type: text/plain')

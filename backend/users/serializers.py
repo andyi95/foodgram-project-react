@@ -6,7 +6,7 @@ from api.models import Follow
 
 class UserSerializerCom(serializers.ModelSerializer):
     """
-    Модель пользвователя, используемая в настройках Djoser для отоброжения
+    Модель пользователя, используемая в настройках Djoser для отображения
     """
     is_subscribed = serializers.SerializerMethodField('get_is_subscribed')
 

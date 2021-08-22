@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=200, verbose_name='Название')),
-                ('measurement_unit', models.CharField(max_length=16, verbose_name='Единица измерения')),
+                ('units', models.CharField(max_length=16, verbose_name='Единица измерения')),
             ],
             options={
                 'verbose_name': 'Ингидиент',

@@ -2,9 +2,9 @@ from django.contrib import admin
 from django.db.models import Count
 from django.urls import reverse
 from django.utils.html import mark_safe
-from django.utils.translation import gettext_lazy as _
 
-from api.models import FavorRecipes, Follow, Ingredient, Recipe, Tag
+from api.models import (FavorRecipes, Follow, Ingredient, Recipe, ShoppingList,
+                        Tag)
 
 
 class RecipeComponentAdmin(admin.TabularInline):
@@ -39,7 +39,7 @@ class RecipeAdmin(admin.ModelAdmin):
         )
         return queryset
 
-    favorite_count.short_description = ('В избранном')
+    favorite_count.short_description = 'В избранном'
 
 
 class TagAdmin(admin.ModelAdmin):
@@ -47,7 +47,7 @@ class TagAdmin(admin.ModelAdmin):
 
 
 class IngridientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'units')
+    list_display = ('name', 'units', 'id')
 
 
 class FollowAdmin(admin.ModelAdmin):
@@ -58,8 +58,14 @@ class FavorAdmin(admin.ModelAdmin):
     list_display = ('author', 'recipes')
 
 
+class ShoppingCartAdmin(admin.ModelAdmin):
+    fields = ('author', 'recipes')
+    search_fields = ('author', 'recipes')
+
+
 admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(Ingredient, IngridientAdmin)
 admin.site.register(Follow, FollowAdmin)
 admin.site.register(FavorRecipes, FavorAdmin)
+admin.site.register(ShoppingList, ShoppingCartAdmin)

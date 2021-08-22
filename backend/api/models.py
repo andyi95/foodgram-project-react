@@ -1,6 +1,6 @@
-from django.core.validators import MinValueValidator, MinLengthValidator
+from django.core.validators import MinLengthValidator, MinValueValidator
 from django.db import models
-from django.db.models import Exists, OuterRef, Sum, Value, Count
+from django.db.models import Count, Exists, OuterRef, Sum, Value
 from users.models import User
 
 
@@ -12,13 +12,14 @@ class IngredientQuerySet(models.QuerySet):
     def shopping_cart(self, user):
         return self.filter(recipe__shop_list__author=user).annotate(
             amount=Sum('recipe_ingredient__amount')
-        ).select_related('units')
+        ).prefetch_related('units').order_by('name')
 
 
 class RecipeQuerySet(models.QuerySet):
     """Выделенный QS с дополнительными аннотированными полями"""
     def opt_annotations(self, user):
         if user.is_anonymous:
+            Recipe.objects.filter(author__following=user)
             return self.annotate(
                 is_favorited=Value(
                     False, output_field=models.BooleanField()
@@ -32,7 +33,7 @@ class RecipeQuerySet(models.QuerySet):
                 author=user, recipes_id=OuterRef('pk')
             )),
             is_in_shopping_cart=Exists(ShoppingList.objects.filter(
-                author=user, recipe_id=OuterRef('pk')
+                author=user, recipes_id=OuterRef('pk')
             ))
         )
 
@@ -50,7 +51,7 @@ class Ingredient(models.Model):
     objects = IngredientQuerySet.as_manager()
 
     class Meta:
-        # Долго мучался, не мог понять где ошибка
+        # Долго мучился, не мог понять где ошибка
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
 
@@ -134,18 +135,6 @@ class Recipe(models.Model):
         return self.name[:32]
 
 
-class FollowQuerySet(models.Model):
-    """Дополнительный QS, подтягивающий количество рецептов и признак подписки"""
-    def opt_annotations(self, user):
-        if user.is_anonymous:
-            return self
-        return self.objects.annotate(
-            is_subscribed=Exists(Follow.objects.filter(
-                author=user, user_id=OuterRef('pk'))
-            ),
-            recipes_count=Count(Recipe.objects.filter(author=user))
-        )
-
 class Follow(models.Model):
     user = models.ForeignKey(
         User,
@@ -160,7 +149,8 @@ class Follow(models.Model):
         verbose_name='Подписки'
     )
 
-    objects = RecipeQuerySet.as_manager()
+    def __str__(self):
+        return f'Подписка{self.user.username} на {self.author.username}'
 
     class Meta:
         ordering = ('pk', )
@@ -172,7 +162,7 @@ class Follow(models.Model):
                 name='follow_user_author_unique'
             ),
             models.CheckConstraint(
-                check=models.Q(author=models.F('user')),
+                check=~models.Q(author=models.F('user')),
                 name='follower_equal_following'
             ),
         ]
@@ -180,7 +170,7 @@ class Follow(models.Model):
 
 
 class ShoppingList(models.Model):
-    recipe = models.ForeignKey(
+    recipes = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
@@ -198,13 +188,13 @@ class ShoppingList(models.Model):
         verbose_name_plural = 'Рецепты в корзине'
         constraints = [
             models.UniqueConstraint(
-                fields=['author', 'recipe'],
-                name='shopping_author_recipe_unique'
+                fields=['author', 'recipes'],
+                name='shopping_author_recipes_unique'
             )
         ]
 
     def __str__(self):
-        return f'{self.recipe} в избранном у {self.author}'
+        return f'{self.recipes.name} в корзине у {self.author.username}'
 
 
 class FavorRecipes(models.Model):
@@ -232,10 +222,13 @@ class FavorRecipes(models.Model):
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
 
+    def __str__(self):
+        return f'{self.recipes.name} в избранном у {self.author.username}'
+
 
 class RecipeComponent(models.Model):
     """
-    Класс, описывающий Ингредиенты как часть рецепта
+    Класс, описывающий ингредиенты как часть рецепта
     """
     ingredient = models.ForeignKey(
         Ingredient,

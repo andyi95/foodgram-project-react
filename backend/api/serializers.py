@@ -1,8 +1,9 @@
+from django.db.models import Value
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from users.models import User
 from users.serializers import UserSerializer
-from django.db.models import Value
+
 from api.models import (FavorRecipes, Follow, Ingredient, Recipe,
                         RecipeComponent, ShoppingList, Tag)
 
@@ -45,16 +46,15 @@ class FollowSerializer(serializers.ModelSerializer):
 
 class IngredientSerializer(serializers.ModelSerializer):
     # Изначально не смотрел на то, как фронт обращается к API и назвал поле
-    # units в моделях. Но что, если API поменяется и надо переименовать поле?
-    measurement_unit = serializers.SlugRelatedField(
-        source='ingredient.units',
-        slug_field='name',
-        read_only=True
-    )
+    # units в моделях. Но что, если интерфейс API поменяется и надо
+    # переименовать поле без переделывания БД?
+    measurement_unit = serializers.SerializerMethodField()
 
     class Meta:
         model = Ingredient
-        fields = '__all__'
+        fields = ('id', 'name', 'measurement_unit')
+    def get_measurement_unit(self, obj):
+        return obj.units
 
 
 class IngredientReadSerializer(serializers.ModelSerializer):
@@ -160,12 +160,14 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                 )
         return attrs
 
-    def create(self, validated_data):
+    def create_update_method(self, validated_data, recipe=None):
+        """Common method implementing DRY for update() and create() actions"""
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
-        recipe = Recipe.objects.create(**validated_data)
-        recipe.save()
-        recipe.tags.set(tags)
+        if recipe:
+            recipe.component_recipes.all().delete()
+        else:
+            recipe = Recipe.objects.create(**validated_data)
         ingredient_instances = []
         for ingredient in ingredients:
             ingr_id = Ingredient.objects.get(id=ingredient['id'])
@@ -174,29 +176,20 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                 RecipeComponent(ingredient=ingr_id, recipe=recipe, amount=amt)
             )
         RecipeComponent.objects.bulk_create(ingredient_instances)
+        recipe.tags.set(tags)
         return recipe
 
+    def create(self, validated_data):
+        return self.create_update_method(validated_data)
+
     def update(self, instance, validated_data):
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
-        instance.ingredients.all().delete()
-        ingredient_instances = []
-        for ingredient in ingredients:
-            ingr_id = Ingredient.objects.get(id=ingredient['id'])
-            amt = ingredient['amount']
-            ingredient_instances.append(
-                RecipeComponent(
-                    ingredient=ingr_id, recipe=instance, amount=amt
-                )
-            )
-        RecipeComponent.objects.bulk_create(ingredient_instances)
+        instance = self.create_update_method(validated_data, recipe=instance)
         instance.name = validated_data.pop('name')
         instance.text = validated_data.pop('text')
         if validated_data.get('image') is not None:
             instance.image = validated_data.pop('image')
         instance.cooking_time = validated_data.pop('cooking_time')
         instance.save()
-        instance.tags.set(tags)
         return instance
 
     def to_representation(self, instance):
@@ -246,10 +239,10 @@ class ShoppingSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         author = self.context.get('request').user
-        recipe = attrs['recipe']
+        recipe = attrs['recipes']
         recipe_exists = ShoppingList.objects.filter(
             author=author,
-            recipe=recipe
+            recipes=recipe
         ).exists()
         if recipe_exists:
             raise serializers.ValidationError(
