@@ -10,8 +10,6 @@ from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from users.models import User
-from users.serializers import UserSerializer
 
 from api.filters import IngredientFilter, RecipeFilter
 from api.models import (FavorRecipes, Follow, Ingredient, Recipe,
@@ -21,6 +19,9 @@ from api.serializers import (FavorSerializer, FollowReadSerializer,
                              FollowSerializer, IngredientSerializer,
                              RecipeReadSerializer, RecipeWriteSerializer,
                              ShoppingSerializer, TagSerializer)
+from foodgram_api.settings import TIMEOUT
+from users.models import User
+from users.serializers import UserSerializer
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -59,7 +60,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return context
 
     @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(60 * 60))
+    @method_decorator(cache_page(TIMEOUT))
     def dispatch(self, request, *args, **kwargs):
         """
         Подключили кэширование для самых "тяжеловесных" вьюсетов
@@ -76,7 +77,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
     @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(60 * 60))
+    @method_decorator(cache_page(TIMEOUT))
     def dispatch(self, request, *args, **kwargs):
         return super(IngredientViewSet, self).dispatch(
             request, *args, **kwargs
@@ -141,7 +142,7 @@ class AuthorViewSet(views.UserViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(60 * 60))
+    @method_decorator(cache_page(TIMEOUT))
     def dispatch(self, request, *args, **kwargs):
         return super(AuthorViewSet, self).dispatch(request, *args, **kwargs)
 
@@ -195,7 +196,7 @@ class FollowReadViewSet(ListAPIView):
         return context
 
     @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(60 * 60))
+    @method_decorator(cache_page(TIMEOUT))
     def dispatch(self, request, *args, **kwargs):
         return super(FollowReadViewSet, self).dispatch(
             request, *args, **kwargs

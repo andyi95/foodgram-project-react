@@ -1,16 +1,17 @@
 import os
 from distutils import util
 
-from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
 load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Пока что вряд-ли нужно выносить кастомные переменные в отдельный модуль
+PAGE_SIZE = 6
+# Caching timeout in seconds
+TIMEOUT = 1
 
 SECRET_KEY = os.getenv('SECRET_KEY')
-
-PAGE_SIZE = 6
 
 DEBUG = bool(util.strtobool(os.getenv('DEBUG_MODE')))
 

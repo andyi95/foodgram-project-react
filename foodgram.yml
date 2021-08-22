@@ -1,0 +1,102 @@
+name: Foodgram app workflow
+
+on: [push]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8.5
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pep8-naming flake8-broken-line flake8-return flake8-isort pytest
+        pip install -r ./backend/requirements.txt
+    - name: Test for PEP8 requirements
+      run: |
+        python -m flake8 ./backend/ --config ./backend/tox.ini
+      env:
+        DB_ENGINE: ${{ secrets.DB_ENGINE }}
+        DB_NAME: ${{ secrets.DB_NAME }}
+        POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        DB_HOST: ${{ secrets.DB_HOST }}
+        DB_PORT: ${{ secrets.DB_PORT }}
+
+  build_and_push_to_docker_hub:
+    name: Push Docker image to Docker Hub
+    if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'}}
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to Docker
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ${{secrets.DOCKER_USERNAME }}/foodgram_project:latest
+          context: ./backend/
+
+  deploy:
+    name: Deploy images on the destination server
+    if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'}}
+    runs-on: ubuntu-latest
+    needs: build_and_push_to_docker_hub
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Create tar archive with Nginx and docker-compose files
+        run: tar -cvf deploy.tar infra/ backend/ docs/
+      - name: copy files with ssh password
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "deploy.tar"
+          target: "./"
+      - name: executing remote ssh commands to deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            tar -xvf deploy.tar
+            cd infra/
+            docker-compose stop
+            docker-compose rm web
+            docker pull ${{secrets.DOCKER_USERNAME }}/foodgram_project:latest
+            echo SECRET_KEY="${{ secrets.SECRET_KEY }}" > .env
+            echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
+            echo POSTGRES_DB=${{ secrets.DB_NAME }} >> .env
+            echo POSTGRES_USER=${{ secrets.POSTGRES_USER }} >> .env
+            echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
+            echo DB_HOST=${{ secrets.DB_HOST }} >> .env
+            echo DB_PORT=${{ secrets.DB_PORT }} >> .env
+            echo HOSTS_LIST=${{ secrets.HOSTS_LIST }} >> .env
+            echo DEBUG_MODE=${{ secrets.DEBUG_MODE }} >> .env
+            docker-compose up -d
+      - name: send telegram message
+        # имхо удобнее получать оповещения о любых завершённых actions с развёрнутой информацией
+        uses: appleboy/telegram-action@master
+        if: ${{ always() }}
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            Report on the last run of ${{ github.workflow }}.
+            ${{ github.job }} in workflow ${{ github.action }} from repo ${{ github.repository }} has finished with status ${{ job.status }}.
