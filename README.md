@@ -2,7 +2,7 @@
 [![Foodgram app workflow](https://github.com/andyi95/foodgram-project-react/actions/workflows/foodgram.yml/badge.svg)](https://github.com/andyi95/foodgram-project-react/actions/workflows/foodgram.yml)
 ## Описание
 
-**Foodgram** веб-приложение для обмена рецептами с элементами социальной сети, позволяющее создавать рецепты, устанавливать собственные теги, ингридиенты и списки покупок. При создании использовался следующий стек технологий: Python3, Django Rest Framework, PostgreSQL, Gunicorn, Docker.
+**Foodgram** веб-приложение для обмена рецептами с элементами социальной сети, позволяющее создавать рецепты, устанавливать собственные теги, ингредиенты и списки покупок. При создании использовался следующий стек технологий: Python3, Django Rest Framework, PostgreSQL, Gunicorn, Docker.
 
 ## Демо-страница проекта
 
@@ -15,7 +15,7 @@
 
 #### Установка Docker и Docker-compose
 
-*Применимо для дистрибутов Ubuntu, для установки на других ОС см. соответствующий раздел [документации Docker](https://docs.docker.com/get-docker/)*
+*Применимо для дистрибутивов Ubuntu, для установки на других ОС см. соответствующий раздел [документации Docker](https://docs.docker.com/get-docker/)*
 
 ```shell
 # Установка необходимых пакетов для добавления стороннего репозитория
@@ -55,7 +55,7 @@ sudo apt install docker-ce docker-compose -y
   - `DB_NAME`, `POSTGRES_USER`, `POSTGRES_PASSWORD` - название базы данных, имя пользователя и пароль соответственно.
   - `HOST`, `USER`, `SSH_KEY`/`PASSWORD`, `PASSPHRASE` (optional) - адрес, имя пользователя и закрытый SSH-ключ (с парольной фразой при защите ключа) либо пароль, использующийся для подключения к удалённому серверу при развёртывании через GitHub Actions. Подробнее о параметрах развертывания по SSH можно узнать из репозитория [ssh-action](https://github.com/appleboy/ssh-action)
   - `DB_ENGINE` (необязательный параметр) - библиотека подключения к базе данных Django, значение по умолчанию `django.db.backends.postgresql`
-  - `TELEGRAM_TOKEN`, `TELEGRAM_TO` (только c GH Actions)  - токен бота и id получателя для отправки Telegram-уведомлений. Инструкцию по созданию бота и получению необходимой информации можно из [докуменации Telegram](https://core.telegram.org/bots#6-botfather)
+  - `TELEGRAM_TOKEN`, `TELEGRAM_TO` (только c GH Actions)  - токен бота и id получателя для отправки Telegram-уведомлений. Инструкцию по созданию бота и получению необходимой информации можно из [документации Telegram](https://core.telegram.org/bots#6-botfather)
  
  #### Инициализация
 
