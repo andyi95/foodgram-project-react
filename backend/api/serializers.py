@@ -1,6 +1,7 @@
-from django.db.models import Value
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
+from rest_framework.generics import get_object_or_404
+
 from users.models import User
 from users.serializers import UserSerializer
 
@@ -47,12 +48,13 @@ class FollowSerializer(serializers.ModelSerializer):
 class IngredientSerializer(serializers.ModelSerializer):
     # Изначально не смотрел на то, как фронт обращается к API и назвал поле
     # units в моделях. Но что, если интерфейс API поменяется и надо
-    # переименовать поле без переделывания БД?
+    # переименовать поле без перезаписи БД?
     measurement_unit = serializers.SerializerMethodField()
 
     class Meta:
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit')
+
     def get_measurement_unit(self, obj):
         return obj.units
 
@@ -153,11 +155,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {'ingredients': 'Поле amount не может быть отрицательным'}
                 )
-            if not Ingredient.objects.filter(pk=int(ingredient['id'])).exists():
-                raise serializers.ValidationError(
-                    {'ingredients':
-                         f'Ингредиент с ID {ingredient["id"]} не найден'}
-                )
         return attrs
 
     def create_update_method(self, validated_data, recipe=None):
@@ -170,7 +167,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             recipe = Recipe.objects.create(**validated_data)
         ingredient_instances = []
         for ingredient in ingredients:
-            ingr_id = Ingredient.objects.get(id=ingredient['id'])
+            ingr_id = get_object_or_404(Ingredient, id=ingredient['id'])
             amt = ingredient['amount']
             ingredient_instances.append(
                 RecipeComponent(ingredient=ingr_id, recipe=recipe, amount=amt)

@@ -1,6 +1,6 @@
-from django.core.validators import MinLengthValidator, MinValueValidator
+from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Count, Exists, OuterRef, Sum, Value
+from django.db.models import Exists, OuterRef, Sum, Value
 from users.models import User
 
 
@@ -166,7 +166,6 @@ class Follow(models.Model):
                 name='follower_equal_following'
             ),
         ]
-
 
 
 class ShoppingList(models.Model):

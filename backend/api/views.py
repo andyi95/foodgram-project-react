@@ -1,4 +1,4 @@
-from django.db.models import BooleanField, Count, Exists, OuterRef, Sum, Value
+from django.db.models import BooleanField, Count, Sum, Value
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -25,7 +25,7 @@ from api.serializers import (FavorSerializer, FollowReadSerializer,
 
 class RecipeViewSet(viewsets.ModelViewSet):
     filter_class = RecipeFilter
-    permission_classes = [IsOwnerOrReadOnly, IsAuthenticatedOrReadOnly ]
+    permission_classes = [IsOwnerOrReadOnly, IsAuthenticatedOrReadOnly]
     queryset = Recipe.objects.prefetch_related(
         'ingredients', 'author', 'tags'
     )
@@ -47,7 +47,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         return serializer.save(author=self.request.user)
-
 
     def get_serializer_class(self):
         if self.request.method in ['GET', ]:
@@ -187,7 +186,7 @@ class FollowReadViewSet(ListAPIView):
         ).prefetch_related('recipes').annotate(
             is_subscribed=Value(True, output_field=BooleanField()),
             recipes_count=Count('recipes__author')
-        )
+        ).order_by('-author__id')
         return qs
 
     def get_serializer_context(self):

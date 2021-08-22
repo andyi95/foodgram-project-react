@@ -7,7 +7,7 @@ def init_db(apps, schema_editor):
     Creates Tag and Ingredient instances with given datasets
     """
     Ingredient = apps.get_model('api', 'Ingredient')
-    Tag = apps.get_model('api', 'Tag')  #name, color, slug
+    Tag = apps.get_model('api', 'Tag')
     tags = [
         Tag(name='Завтрак', color='#FFB240', slug='breakfast'),
         Tag(name='Обед', color='#FF8040', slug='supper'),
@@ -29,8 +29,8 @@ class Migration(migrations.Migration):
     Load initial data
     """
     dependencies = [
-        ('api', '0002_auto_20210814_1530'),
+        ('api', '0001_initial'),
     ]
     operations = [
-
+        migrations.RunPython(init_db),
     ]
