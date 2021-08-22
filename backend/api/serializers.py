@@ -2,7 +2,7 @@ from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from users.models import User
 from users.serializers import UserSerializer
-
+from django.db.models import Value
 from api.models import (FavorRecipes, Follow, Ingredient, Recipe,
                         RecipeComponent, ShoppingList, Tag)
 
@@ -19,15 +19,20 @@ class FollowSerializer(serializers.ModelSerializer):
     def validate(self, data):
         user = self.context.get('request').user
         author_id = data['author'].id
-        follow_exist = Follow.objects.filter(
-            user=user,
-            author__id=author_id
-        ).exists()
 
         if self.context.get('request').method == 'GET':
-            if user.id == author_id or follow_exist:
+            if user.pk == author_id:
+                raise serializers.ValidationError(
+                    'Нельзя подписаться на самого себя'
+                )
+            follow_exist = Follow.objects.filter(
+                user=user,
+                author__id=author_id
+            ).exists()
+            if follow_exist:
                 raise serializers.ValidationError(
                     'Подписка существует')
+
         return data
 
     def to_representation(self, instance):
@@ -39,6 +44,8 @@ class FollowSerializer(serializers.ModelSerializer):
 
 
 class IngredientSerializer(serializers.ModelSerializer):
+    # Изначально не смотрел на то, как фронт обращается к API и назвал поле
+    # units в моделях. Но что, если API поменяется и надо переименовать поле?
     measurement_unit = serializers.SlugRelatedField(
         source='ingredient.units',
         slug_field='name',
@@ -94,10 +101,20 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class RecipeComponentSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(source='ingredient.id')
-    name = serializers.ReadOnlyField(source='ingredient.name')
-    measurement_unit = serializers.ReadOnlyField(
-        source='ingredient.units'
+    id = serializers.SlugRelatedField(
+        source='ingredient',
+        slug_field='id',
+        queryset=Ingredient.objects.all()
+    )
+    name = serializers.SlugRelatedField(
+        source='ingredient',
+        slug_field='name',
+        read_only=True
+    )
+    measurement_unit = serializers.SlugRelatedField(
+        source='ingredient',
+        slug_field='units',
+        read_only=True
     )
 
     class Meta:
@@ -121,12 +138,12 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = ('id', 'tags', 'author', 'ingredients', 'name',
+        fields = ('id', 'author', 'tags', 'ingredients', 'name',
                   'image', 'text', 'cooking_time')
 
     def validate(self, attrs):
         ingredients = self.initial_data.get('ingredients')
-        if len(ingredients) == 0:
+        if not ingredients:
             raise serializers.ValidationError(
                 {'ingredients':
                     'Список ингридиентов не получен'}
@@ -135,6 +152,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             if int(ingredient['amount']) <= 0:
                 raise serializers.ValidationError(
                     {'ingredients': 'Поле amount не может быть отрицательным'}
+                )
+            if not Ingredient.objects.filter(pk=int(ingredient['id'])).exists():
+                raise serializers.ValidationError(
+                    {'ingredients':
+                         f'Ингредиент с ID {ingredient["id"]} не найден'}
                 )
         return attrs
 
@@ -157,7 +179,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
-        RecipeComponent.objects.filter(recipe=instance).delete()
+        instance.ingredients.all().delete()
         ingredient_instances = []
         for ingredient in ingredients:
             ingr_id = Ingredient.objects.get(id=ingredient['id'])
@@ -204,13 +226,9 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 
 class FollowReadSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.SerializerMethodField(
-        method_name='get_is_subscribed'
-    )
+    is_subscribed = serializers.BooleanField(read_only=True)
     recipes = RecipeReadSerializer(many=True, read_only=True)
-    recipes_count = serializers.SerializerMethodField(
-        method_name='get_recipes'
-    )
+    recipes_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = User
@@ -218,15 +236,6 @@ class FollowReadSerializer(serializers.ModelSerializer):
             'email', 'id', 'username', 'first_name', 'last_name',
             'is_subscribed', 'recipes', 'recipes_count'
         )
-
-    def get_recipes(self, user):
-        return user.recipes.count()
-
-    def get_is_subscribed(self, user):
-        author = self.context.get('current_user')
-        if Follow.objects.filter(user=user, author=author).exists():
-            return True
-        return False
 
 
 class ShoppingSerializer(serializers.ModelSerializer):

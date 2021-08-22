@@ -2,15 +2,16 @@ from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_cookie
+from django.db.models import Exists, OuterRef, Sum, Value, Count
 from djoser import views
 from rest_framework import status, viewsets
 from rest_framework.generics import ListAPIView, get_object_or_404
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import User
 from users.serializers import UserSerializer
-
+from django.db.models import Value, BooleanField
 from api.filters import IngredientFilter, RecipeFilter
 from api.models import (FavorRecipes, Follow, Ingredient, Recipe,
                         RecipeComponent, ShoppingList, Tag)
@@ -23,7 +24,7 @@ from api.serializers import (FavorSerializer, FollowReadSerializer,
 
 class RecipeViewSet(viewsets.ModelViewSet):
     filter_class = RecipeFilter
-    permission_classes = [IsOwnerOrReadOnly, ]
+    permission_classes = [IsOwnerOrReadOnly, IsAuthenticatedOrReadOnly ]
     queryset = Recipe.objects.prefetch_related(
         'ingredients', 'author', 'tags'
     )
@@ -44,7 +45,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
             serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
+        # ingredients = serializer.validated_data.pop('ingredients')
+        # tags = serializer.validated_data.pop('tags')
+        # recipe = Recipe.objects.create(**serializer.validated_data, author=self.request.user)
+        # recipe.tags.set(tags)
+        # ingredients_to_save = []
+        # for ingredient in ingredients:
+        #     ing_instance = get_object_or_404(Ingredient, id=ingredient['id'])
+        #     amt = ingredient['amount']
+        #     ingredients_to_save.append(
+        #         RecipeComponent(ingredient=ing_instance, recipe=recipe, amount=amt)
+        #     )
+        # RecipeComponent.objects.bulk_create(ingredients_to_save)
+        t = 1
         return serializer.save(author=self.request.user)
+
 
     def get_serializer_class(self):
         if self.request.method in ['GET', ]:
@@ -56,13 +71,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         context.update({'request': self.request})
         return context
 
-    @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(60 * 60))
-    def dispatch(self, request, *args, **kwargs):
-        """
-        Подключили кэширование для самых "тяжеловесных" вьюсетов
-        """
-        return super(RecipeViewSet, self).dispatch(request, *args, **kwargs)
+    # @method_decorator(vary_on_cookie)
+    # @method_decorator(cache_page(60 * 60))
+    # def dispatch(self, request, *args, **kwargs):
+    #     """
+    #     Подключили кэширование для самых "тяжеловесных" вьюсетов
+    #     """
+    #     return super(RecipeViewSet, self).dispatch(request, *args, **kwargs)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -73,12 +88,12 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['name', ]
     pagination_class = None
 
-    @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(60 * 60))
-    def dispatch(self, request, *args, **kwargs):
-        return super(IngredientViewSet, self).dispatch(
-            request, *args, **kwargs
-        )
+    # @method_decorator(vary_on_cookie)
+    # @method_decorator(cache_page(60 * 60))
+    # def dispatch(self, request, *args, **kwargs):
+    #     return super(IngredientViewSet, self).dispatch(
+    #         request, *args, **kwargs
+    #     )
 
 
 class FavoriteViewSet(APIView):
@@ -104,13 +119,13 @@ class FavoriteViewSet(APIView):
 
     def delete(self, request, recipe_id):
         user = request.user
-        recipe = get_object_or_404(Recipe, id=recipe_id)
         favorite_obj = get_object_or_404(
-            FavorRecipes, author=user, recipes=recipe
+            FavorRecipes, author=user, recipes_id=recipe_id
         )
         favorite_obj.delete()
         return Response(
-            'Removed', status=status.HTTP_204_NO_CONTENT)
+            'Removed', status=status.HTTP_204_NO_CONTENT
+        )
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -139,12 +154,12 @@ class ShoppingViewSet(FavoriteViewSet):
 class AuthorViewSet(views.UserViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
-    @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(60 * 60))
-    def dispatch(self, request, *args, **kwargs):
-        return super(AuthorViewSet, self).dispatch(request, *args, **kwargs)
+    # @method_decorator(vary_on_cookie)
+    # @method_decorator(cache_page(60 * 60))
+    # def dispatch(self, request, *args, **kwargs):
+    #     return super(AuthorViewSet, self).dispatch(request, *args, **kwargs)
 
 
 class FollowViewSet(APIView):
@@ -172,24 +187,35 @@ class FollowViewSet(APIView):
 
 
 class FollowReadViewSet(ListAPIView):
-    queryset = User.objects.all()
     serializer_class = FollowReadSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return User.objects.filter(following__user=self.request.user)
+        """
+        Получаем список подписок вместе с подвязанными рецептами и подсчитанным
+        количеством записей. Если мы отдаём список подписок, то делать
+        отдельный запрос на признак подписки нецелесообразно - априори будет
+        True
+        """
+        s = User.objects.filter(
+            following__user=self.request.user
+        ).prefetch_related('recipes').annotate(
+            is_subscribed=Value(True, output_field=BooleanField()),
+            recipes_count=Count('recipes__author')
+        )
+        return s
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context.update({'request': self.request})
         return context
 
-    @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(60 * 60))
-    def dispatch(self, request, *args, **kwargs):
-        return super(FollowReadViewSet, self).dispatch(
-            request, *args, **kwargs
-        )
+    # @method_decorator(vary_on_cookie)
+    # @method_decorator(cache_page(60 * 60))
+    # def dispatch(self, request, *args, **kwargs):
+    #     return super(FollowReadViewSet, self).dispatch(
+    #         request, *args, **kwargs
+    #     )
 
 
 class ShoppingCartDL(APIView):

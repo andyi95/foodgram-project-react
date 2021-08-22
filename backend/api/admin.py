@@ -2,19 +2,21 @@ from django.contrib import admin
 from django.db.models import Count
 from django.urls import reverse
 from django.utils.html import mark_safe
+from django.utils.translation import gettext_lazy as _
 
 from api.models import FavorRecipes, Follow, Ingredient, Recipe, Tag
 
 
 class RecipeComponentAdmin(admin.TabularInline):
     model = Recipe.ingredients.through
-    extra = 2
+    extra = 0
+    min_num = 1  # From Django 1.7 :)
 
 
 class RecipeAdmin(admin.ModelAdmin):
     inlines = (RecipeComponentAdmin,)
-    list_display = ('pk', 'name', 'author_link', 'favorite_count')
-    list_display_links = ('name', )
+    list_display = ('pk', 'name', 'author_link', 'favorite_count', 'tag_list')
+    list_display_links = ('pk', 'name', )
     search_fields = ('author', 'name')
     list_filter = ('tags', )
 
@@ -24,6 +26,10 @@ class RecipeAdmin(admin.ModelAdmin):
 
     def favorite_count(self, obj):
         return obj.favorite_count
+
+    def tag_list(self, obj):
+        s = list(obj.tags.values('name'))
+        return ', '.join(i["name"] for i in s)
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
