@@ -6,16 +6,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# Пока что вряд-ли нужно выносить кастомные переменные в отдельный модуль
+
 PAGE_SIZE = 6
 # Caching timeout in seconds
-TIMEOUT = 1
+CACHE_TIMEOUT = 300
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = bool(util.strtobool(os.getenv('DEBUG_MODE')))
 
-ALLOWED_HOSTS = os.getenv('HOSTS_LIST').split()
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.flatpages',
@@ -86,7 +86,6 @@ if DEBUG:
             'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
         }
     }
-
 else:
     CACHES = {
         'default': {
@@ -99,8 +98,6 @@ else:
     }
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
     SESSION_CACHE_ALIAS = "default"
-
-
 
 AUTH_USER_MODEL = 'users.User'
 AUTH_PASSWORD_VALIDATORS = [
@@ -122,6 +119,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
     ],
@@ -136,7 +136,7 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'SEND_CONFIRMATION_EMAIL': False,
     'PERMISSIONS': {
-        'user': ['rest_framework.permissions.AllowAny'],
+        'user': ['rest_framework.permissions.IsAuthenticated'],
         'user_list': ['rest_framework.permissions.AllowAny'],
     },
     'SERIALIZERS': {
@@ -146,7 +146,7 @@ DJOSER = {
 }
 
 LANGUAGE_CODE = 'ru-RU'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True

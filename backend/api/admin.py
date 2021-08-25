@@ -10,7 +10,7 @@ from api.models import (FavorRecipes, Follow, Ingredient, Recipe, ShoppingList,
 class RecipeComponentAdmin(admin.TabularInline):
     model = Recipe.ingredients.through
     extra = 0
-    min_num = 1  # From Django 1.7 :)
+    min_num = 1
 
 
 class RecipeAdmin(admin.ModelAdmin):
@@ -29,7 +29,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
     def tag_list(self, obj):
         s = list(obj.tags.values('name'))
-        return ', '.join(i["name"] for i in s)
+        return ', '.join(i['name'] for i in s)
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -40,6 +40,7 @@ class RecipeAdmin(admin.ModelAdmin):
         return queryset
 
     favorite_count.short_description = 'В избранном'
+    tag_list.short_desciptions = 'Тэги'
 
 
 class TagAdmin(admin.ModelAdmin):
@@ -47,7 +48,7 @@ class TagAdmin(admin.ModelAdmin):
 
 
 class IngridientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'units', 'id')
+    list_display = ('name', 'measurement_unit', 'id')
 
 
 class FollowAdmin(admin.ModelAdmin):

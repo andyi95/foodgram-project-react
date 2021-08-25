@@ -1,23 +1,12 @@
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Exists, OuterRef, Sum, Value
+from django.db.models import Exists, OuterRef, Sum, Value, F
 
 from users.models import User
 
 
-class IngredientQuerySet(models.QuerySet):
-    """
-    Менеджер для автоматического аннотирования рецепта в представлении списков
-    покупок
-    """
-    def shopping_cart(self, user):
-        return self.filter(recipe__shop_list__author=user).annotate(
-            amount=Sum('recipe_ingredient__amount')
-        ).prefetch_related('units').order_by('name')
-
-
 class RecipeQuerySet(models.QuerySet):
-    """Выделенный QS с дополнительными аннотированными полями"""
+    """Выделенный QS с дополнительными аннотированными полями."""
     def opt_annotations(self, user):
         if user.is_anonymous:
             Recipe.objects.filter(author__following=user)
@@ -44,20 +33,17 @@ class Ingredient(models.Model):
         max_length=200,
         verbose_name='Название'
     )
-    units = models.CharField(
+    measurement_unit = models.CharField(
         max_length=16,
         verbose_name='Единица измерения'
     )
 
-    objects = IngredientQuerySet.as_manager()
-
     class Meta:
-        # Долго мучился, не мог понять где ошибка
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
 
     def __str__(self):
-        return f'{self.name}, {self.units}'
+        return f'{self.name}, {self.measurement_unit}'
 
 
 class Tag(models.Model):
@@ -115,10 +101,12 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления',
-        validators=[MinValueValidator(
-            limit_value=0,
-            message='Время приготовления - неотрицательное значение'
-        )]
+        validators=[
+            MinValueValidator(
+                limit_value=0,
+                message='Время приготовления - неотрицательное значение'
+            )
+        ]
     )
     pub_date = models.DateTimeField(
         auto_now_add=True,
@@ -157,6 +145,7 @@ class Follow(models.Model):
         ordering = ('pk', )
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
+        # С такими выражениями впервые столкнулся :)
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'author'],
@@ -226,6 +215,18 @@ class FavorRecipes(models.Model):
         return f'{self.recipes.name} в избранном у {self.author.username}'
 
 
+class RecipeComponentQuerySet(models.QuerySet):
+    """Аннотировать список покупок суммой и короткими названиями полей."""
+    def shop_list(self, user):
+        qs = self.filter(recipe__shop_list__author=user).values(
+            'ingredient', 'ingredient__name', 'ingredient__measurement_unit'
+        ).order_by('ingredient').annotate(
+            sum=Sum('amount'), name=F('ingredient__name'),
+            unit=F('ingredient__measurement_unit')
+        )
+        return qs
+
+
 class RecipeComponent(models.Model):
     """
     Класс, описывающий ингредиенты как часть рецепта
@@ -248,6 +249,8 @@ class RecipeComponent(models.Model):
             limit_value=1,
             message='Количество ингредиента не может быть меньше 1')]
     )
+
+    objects = RecipeComponentQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'Ингредиент в рецепте'
