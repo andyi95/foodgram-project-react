@@ -1,24 +1,22 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
-from api.views import (FavoriteViewSet, FollowReadViewSet, FollowViewSet,
-                       IngredientViewSet, RecipeViewSet, ShoppingCartDL,
-                       ShoppingViewSet, TagViewSet)
+from api.views import (FavoriteViewSet, FollowViewSet, IngredientViewSet,
+                       RecipeViewSet, ShoppingCartDL, ShoppingViewSet,
+                       TagViewSet)
+from users.views import FollowReadViewSet
 
 v1_router = SimpleRouter()
 v1_router.register('ingredients', IngredientViewSet, basename='ingredients')
 v1_router.register('recipes', RecipeViewSet, basename='recipes')
 v1_router.register('tags', TagViewSet, basename='tags')
+v1_router.register('users/subscriptions', viewset=FollowReadViewSet, basename='subscriptions')
 
 
 urlpatterns = [
     path(
         'users/<int:author_id>/subscribe/',
         FollowViewSet.as_view(), name='subscribe'
-    ),
-    path(
-        'users/subscriptions/',
-        FollowReadViewSet.as_view(), name='subscriptions'
     ),
     path(
         'recipes/<int:recipe_id>/favorite/',

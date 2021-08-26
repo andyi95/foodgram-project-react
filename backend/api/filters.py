@@ -9,9 +9,7 @@ FILTER_CHOICES = (
 
 
 class RecipeFilter(filters.FilterSet):
-    """
-    Фильтры работают по пред-извлеченным значениям is_favorited и т.д.
-    """
+    """Фильтры работают по пред-извлеченным значениям is_favorited и т.д."""
     tags = filters.AllValuesMultipleFilter(
         field_name='tags__slug'
     )

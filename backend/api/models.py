@@ -1,12 +1,13 @@
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Exists, OuterRef, Sum, Value, F
+from django.db.models import Exists, F, OuterRef, Sum, Value
 
 from users.models import User
 
 
 class RecipeQuerySet(models.QuerySet):
-    """Выделенный QS с дополнительными аннотированными полями."""
+    """A separate QS with annotated fields."""
+
     def opt_annotations(self, user):
         if user.is_anonymous:
             Recipe.objects.filter(author__following=user)
@@ -216,7 +217,8 @@ class FavorRecipes(models.Model):
 
 
 class RecipeComponentQuerySet(models.QuerySet):
-    """Аннотировать список покупок суммой и короткими названиями полей."""
+    """Annotate the shoplist with Sum and ingredient fields."""
+
     def shop_list(self, user):
         qs = self.filter(recipe__shop_list__author=user).values(
             'ingredient', 'ingredient__name', 'ingredient__measurement_unit'
@@ -228,9 +230,8 @@ class RecipeComponentQuerySet(models.QuerySet):
 
 
 class RecipeComponent(models.Model):
-    """
-    Класс, описывающий ингредиенты как часть рецепта
-    """
+    """Class for ingredient in recipe repr with add fields."""
+
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,

@@ -1,13 +1,7 @@
-from django.db.models import BooleanField, Count, Sum, Value
 from django.http import HttpResponse
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
-from django.views.decorators.vary import vary_on_cookie
-from django.core.cache import cache
 from djoser import views
-from api.paginators import PageNumberPaginatorModified
 from rest_framework import status, viewsets
-from rest_framework.generics import ListAPIView, get_object_or_404
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
@@ -17,18 +11,18 @@ from api.filters import IngredientFilter, RecipeFilter
 from api.models import (FavorRecipes, Follow, Ingredient, Recipe,
                         RecipeComponent, ShoppingList, Tag)
 from api.permissions import IsOwnerOrReadOnly
-from api.serializers import (FavorSerializer, FollowReadSerializer,
+from api.serializers import (FavorSerializer,
                              FollowSerializer, IngredientSerializer,
                              RecipeReadSerializer, RecipeWriteSerializer,
                              ShoppingSerializer, TagSerializer)
-from foodgram_api.settings import CACHE_TIMEOUT
+
 from users.models import User
 from users.serializers import UserSerializer
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     filter_class = RecipeFilter
-    permission_classes = [IsOwnerOrReadOnly, ]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Recipe.objects.prefetch_related(
         'ingredients', 'author', 'tags'
     )
@@ -45,7 +39,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        cache.clear()
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
@@ -62,12 +55,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         context.update({'request': self.request})
         return context
 
-    @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(CACHE_TIMEOUT))
-    def dispatch(self, request, *args, **kwargs):
-        """Подключили кэширование для самых "тяжеловесных" вьюсетов."""
-        return super(RecipeViewSet, self).dispatch(request, *args, **kwargs)
-
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
@@ -77,16 +64,10 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['name', ]
     pagination_class = None
 
-    @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(CACHE_TIMEOUT))
-    def dispatch(self, request, *args, **kwargs):
-        return super(IngredientViewSet, self).dispatch(
-            request, *args, **kwargs
-        )
-
 
 class CommonViewSet(APIView):
-    """Common viewset for creation by get and delete methods."""
+    """Process get and delete methods with a common viewset."""
+
     permission_classes = [IsOwnerOrReadOnly]
     serializer_class = None
     obj = Recipe
@@ -142,11 +123,6 @@ class AuthorViewSet(views.UserViewSet):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(CACHE_TIMEOUT))
-    def dispatch(self, request, *args, **kwargs):
-        return super(AuthorViewSet, self).dispatch(request, *args, **kwargs)
-
 
 class FollowViewSet(APIView):
     permission_classes = [IsOwnerOrReadOnly]
@@ -172,44 +148,12 @@ class FollowViewSet(APIView):
                         status=status.HTTP_204_NO_CONTENT)
 
 
-class FollowReadViewSet(ListAPIView):
-    serializer_class = FollowReadSerializer
-    permission_classes = [IsOwnerOrReadOnly]
-    pagination_class = PageNumberPaginatorModified
-
-    def get_queryset(self):
-        """
-        Получаем список подписок вместе с подвязанными рецептами и подсчитанным
-        количеством записей. Если мы отдаём список подписок, то делать
-        отдельный запрос на признак подписки нецелесообразно - априори будет
-        True
-        """
-        qs = User.objects.filter(
-            following__user=self.request.user
-        ).prefetch_related('recipes').annotate(
-            is_subscribed=Value(True, output_field=BooleanField()),
-            recipes_count=Count('recipes__author')
-        ).order_by('-author__id')
-        return qs
-
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context.update({'request': self.request})
-        return context
-
-    @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(CACHE_TIMEOUT))
-    def dispatch(self, request, *args, **kwargs):
-        return super(FollowReadViewSet, self).dispatch(
-            request, *args, **kwargs
-        )
-
 
 class ShoppingCartDL(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """Скачать список покупок с суммированным количеством."""
+        """Download a shopping list with aggregated sum of ingredients."""
         user = request.user
         shop_list = RecipeComponent.objects.shop_list(user=user)
         wishlist = [f'{item["name"]} - {item["sum"]} '

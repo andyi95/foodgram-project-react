@@ -1,9 +1,7 @@
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
-from rest_framework.exceptions import APIException
-from rest_framework.generics import get_object_or_404
-from foodgram_api.settings import PAGE_SIZE
-from api.paginators import PageNumberPaginatorModified
+
+
 from api.models import (FavorRecipes, Follow, Ingredient, Recipe,
                         RecipeComponent, ShoppingList, Tag)
 from users.models import User
@@ -142,7 +140,8 @@ class RecipeComponentSerializer(serializers.ModelSerializer):
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
-    """Сериализатор для валидации создания и обновления рецептов."""
+    """Recipe create-update ops serialize and validate."""
+
     tags = serializers.SlugRelatedField(
         queryset=Tag.objects.all(),
         many=True,
@@ -168,7 +167,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return attrs
 
     def create_update_method(self, validated_data, recipe=None):
-        """Common method implementing DRY for update(), create() actions."""
+        """Implement common method DRY for update(), create() actions."""
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
         if recipe:
@@ -232,9 +231,16 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         return RecipeComponentSerializer(queryset, many=True).data
 
 
+class RecipeTinySerializer(serializers.ModelSerializer):
+    """Return a short form of recipe for repr as nested."""
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
 class FollowReadSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.BooleanField(read_only=True)
-    recipes = RecipeReadSerializer(many=True, read_only=True)
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -244,9 +250,15 @@ class FollowReadSerializer(serializers.ModelSerializer):
             'is_subscribed', 'recipes', 'recipes_count'
         )
 
-    def paginated_recipes(self, obj):
-        paginator = PageNumberPaginatorModified(obj.recipes.all(), PAGE_SIZE)
-
+    def get_recipes(self, obj):
+        """Return necessary amount of recipes."""
+        num = self.context["request"].query_params.get('recipes_limit')
+        if num:
+            num = int(num)
+            recipes = obj.recipes.all()[:num]
+        else:
+            recipes = obj.recipes.all()
+        return RecipeTinySerializer(recipes, many=True).data
 
 
 class ShoppingSerializer(serializers.ModelSerializer):

@@ -9,7 +9,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 PAGE_SIZE = 6
 # Caching timeout in seconds
-CACHE_TIMEOUT = 300
+CACHE_TIMEOUT = 60*60
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
@@ -80,6 +80,7 @@ DATABASES = {
         }
 }
 
+# С кэшированием всё оказалось не столь однозначно, пока отключу
 if DEBUG:
     CACHES = {
         'default': {
