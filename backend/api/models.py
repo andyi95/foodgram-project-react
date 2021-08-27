@@ -10,7 +10,6 @@ class RecipeQuerySet(models.QuerySet):
 
     def opt_annotations(self, user):
         if user.is_anonymous:
-            Recipe.objects.filter(author__following=user)
             return self.annotate(
                 is_favorited=Value(
                     False, output_field=models.BooleanField()
