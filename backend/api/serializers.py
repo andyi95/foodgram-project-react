@@ -1,48 +1,9 @@
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
-
-from api.models import (FavorRecipes, Follow, Ingredient, Recipe,
-                        RecipeComponent, ShoppingList, Tag)
-from users.models import User
+from api.models import (FavorRecipes, Ingredient, Recipe, RecipeComponent,
+                        ShoppingList, Tag)
 from users.serializers import UserSerializer
-
-
-class FollowSerializer(serializers.ModelSerializer):
-    queryset = User.objects.all()
-    user = serializers.PrimaryKeyRelatedField(queryset=queryset)
-    author = serializers.PrimaryKeyRelatedField(queryset=queryset)
-
-    class Meta:
-        model = Follow
-        fields = ('user', 'author')
-
-    def validate(self, data):
-        # По большому счёту, здесь и не нужна проверка метода - сериализатор
-        # вызывается только из метода get(), для delete() он не нужен, а
-        # на всё остальное Django сам вернёт ошибку 405
-        user = self.context.get('request').user
-        author_id = data['author'].id
-        if user.pk == author_id:
-            raise serializers.ValidationError(
-                'Нельзя подписаться на самого себя'
-            )
-        follow_exist = Follow.objects.filter(
-            user=user,
-            author__id=author_id
-        ).exists()
-        if follow_exist:
-            raise serializers.ValidationError(
-                'Подписка существует')
-
-        return data
-
-    def to_representation(self, instance):
-        request = self.context.get('request')
-        context = {'request': request}
-        return FollowReadSerializer(
-            instance.author,
-            context=context).data
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -231,36 +192,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         return RecipeComponentSerializer(queryset, many=True).data
 
 
-class RecipeTinySerializer(serializers.ModelSerializer):
-    """Return a short form of recipe for repr as nested."""
-    class Meta:
-        model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
-
-
-class FollowReadSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.BooleanField(read_only=True)
-    recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = User
-        fields = (
-            'email', 'id', 'username', 'first_name', 'last_name',
-            'is_subscribed', 'recipes', 'recipes_count'
-        )
-
-    def get_recipes(self, obj):
-        """Return necessary amount of recipes."""
-        num = self.context["request"].query_params.get('recipes_limit')
-        if num:
-            num = int(num)
-            recipes = obj.recipes.all()[:num]
-        else:
-            recipes = obj.recipes.all()
-        return RecipeTinySerializer(recipes, many=True).data
-
-
 class ShoppingSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -309,8 +240,3 @@ class FavorSerializer(serializers.ModelSerializer):
     class Meta:
         model = FavorRecipes
         fields = '__all__'
-
-
-class ListFavorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User

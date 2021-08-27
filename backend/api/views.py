@@ -1,28 +1,26 @@
 from django.http import HttpResponse
-from djoser import views
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_cookie
 from rest_framework import status, viewsets
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import (AllowAny, IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.filters import IngredientFilter, RecipeFilter
-from api.models import (FavorRecipes, Follow, Ingredient, Recipe,
-                        RecipeComponent, ShoppingList, Tag)
+from api.models import (FavorRecipes, Ingredient, Recipe, RecipeComponent,
+                        ShoppingList, Tag)
 from api.permissions import IsOwnerOrReadOnly
-from api.serializers import (FavorSerializer,
-                             FollowSerializer, IngredientSerializer,
+from api.serializers import (FavorSerializer, IngredientSerializer,
                              RecipeReadSerializer, RecipeWriteSerializer,
                              ShoppingSerializer, TagSerializer)
-
-from users.models import User
-from users.serializers import UserSerializer
+from foodgram_api.settings import CACHE_TIMEOUT
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     filter_class = RecipeFilter
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsOwnerOrReadOnly]
     queryset = Recipe.objects.prefetch_related(
         'ingredients', 'author', 'tags'
     )
@@ -54,6 +52,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context.update({'request': self.request})
         return context
+
+    @method_decorator(vary_on_cookie)
+    @method_decorator(cache_page(CACHE_TIMEOUT))
+    def dispatch(self, request, *args, **kwargs):
+        return super(RecipeViewSet, self).dispatch(request, *args, **kwargs)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -116,37 +119,6 @@ class ShoppingViewSet(CommonViewSet):
     serializer_class = ShoppingSerializer
     obj = Recipe
     del_obj = ShoppingList
-
-
-class AuthorViewSet(views.UserViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-
-class FollowViewSet(APIView):
-    permission_classes = [IsOwnerOrReadOnly]
-
-    def get(self, request, author_id):
-        user = request.user
-        data = {
-            'user': user.id,
-            'author': author_id
-        }
-        serializer = FollowSerializer(data=data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, author_id):
-        user = request.user
-        follow = get_object_or_404(
-            Follow, user_id=user.id, author_id=author_id
-        )
-        follow.delete()
-        return Response('Вы успешно отписаны',
-                        status=status.HTTP_204_NO_CONTENT)
-
 
 
 class ShoppingCartDL(APIView):

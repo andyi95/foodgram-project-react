@@ -15,7 +15,9 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = bool(util.strtobool(os.getenv('DEBUG_MODE')))
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('HOSTNAME').split()
+# fix admin access issue
+ALLOWED_HOSTS.append('back')
 
 INSTALLED_APPS = [
     'django.contrib.flatpages',
