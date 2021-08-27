@@ -19,6 +19,7 @@ class RecipeAdmin(admin.ModelAdmin):
     list_display_links = ('pk', 'name', )
     search_fields = ('author', 'name')
     list_filter = ('tags', )
+    ordering = ('pk', )
 
     def author_link(self, obj):
         url = reverse('admin:users_user_change', args=[obj.author.id])

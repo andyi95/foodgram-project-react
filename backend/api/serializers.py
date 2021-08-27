@@ -199,7 +199,7 @@ class ShoppingSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate(self, attrs):
-        if not Ingredient.objects.filter(pk=attrs['id']).exists:
+        if not Ingredient.objects.filter(pk=attrs['recipes'].id).exists:
             raise serializers.ValidationError(
                 {
                     'ingredients':
