@@ -32,7 +32,7 @@ class FollowReadViewSet(ReadOnlyModelViewSet):
     pagination_class = PageNumberPaginatorModified
 
     def get_queryset(self):
-        qs = User.objects.follow_recipes(user=self.request.user).all()
+        qs = User.ext_objects.follow_recipes(user=self.request.user).all()
         return qs
 
     def get_serializer_context(self):
