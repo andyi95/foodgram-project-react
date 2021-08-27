@@ -14,6 +14,7 @@ class UserQuerySet(models.QuerySet):
         ).order_by('-author__id')
         return queryset
 
+
 class CustomUserManager(UserManager.from_queryset(UserQuerySet)):
     """Fix 'ManagerFromUserQuerySet has no attrib get_by_nat_key' error."""
     use_in_migration = False
