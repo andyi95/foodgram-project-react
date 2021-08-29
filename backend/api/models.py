@@ -93,8 +93,9 @@ class Recipe(models.Model):
         through='RecipeComponent',
         blank=False
     )
+    # убрал max_length, поскольку в 255 символов ни один рецепт объективно
+    # не поместится.
     text = models.TextField(
-        max_length=255,
         verbose_name='Текст',
         null=True
     )
