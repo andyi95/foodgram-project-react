@@ -14,7 +14,7 @@ class RecipeComponentAdmin(admin.TabularInline):
 
 class RecipeAdmin(admin.ModelAdmin):
     inlines = (RecipeComponentAdmin,)
-    list_display = ('id', 'name', 'author_link', 'favorite_count', 'tag_list')
+    list_display = ('name', 'author_link', 'favorite_count', 'tag_list', 'id')
     list_display_links = ('id', 'name')
     search_fields = ('name', 'text', 'ingredients__name')
     list_filter = ('tags', 'author')
@@ -55,11 +55,11 @@ class IngridientAdmin(admin.ModelAdmin):
 
 
 class FavorAdmin(admin.ModelAdmin):
-    list_display = ('author', 'recipes')
+    list_display = ('author', 'recipes', 'id')
 
 
 class ShoppingCartAdmin(admin.ModelAdmin):
-    list_display = ('author', 'recipes')
+    list_display = ('author', 'recipes', 'id')
     search_fields = (
         'recipes__name', 'recipes__text',
         'author__first_name', 'author__last_name'
