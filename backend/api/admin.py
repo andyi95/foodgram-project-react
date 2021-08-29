@@ -14,8 +14,11 @@ class RecipeComponentAdmin(admin.TabularInline):
 
 class RecipeAdmin(admin.ModelAdmin):
     inlines = (RecipeComponentAdmin,)
-    list_display = ('pk', 'pub_date', 'name', 'author_link', 'favorite_count', 'tag_list')
-    # sortable_by = ('pk', 'name', 'author_link')
+    # Add date in order to allow custom sorting by date, Django doesn't allow
+    # to sort by pk as it's not an explicit field of model.
+    list_display = (
+        'pk', 'name', 'author_link', 'favorite_count', 'tag_list', 'pub_date'
+    )
     list_display_links = ('pk', 'name', )
     search_fields = ('name', 'author_link')
     list_filter = ('tags', )

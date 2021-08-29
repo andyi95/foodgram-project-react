@@ -47,17 +47,17 @@ class Follow(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='follower',
-        verbose_name='Подписчики'
+        verbose_name='Подписчик'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='following',
-        verbose_name='Подписки'
+        verbose_name='Автор'
     )
 
     def __str__(self):
-        return f'Подписка{self.user.username} на {self.author.username}'
+        return f'Подписка {self.user.username} на {self.author.username}'
 
     class Meta:
         ordering = ('pk', )
