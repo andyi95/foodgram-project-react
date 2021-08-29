@@ -9,6 +9,8 @@ class RecipeQuerySet(models.QuerySet):
     """A separate QS with annotated fields."""
 
     def opt_annotations(self, user):
+        # По ошибке оставил qs, который дебажил - смысла в нем и не было:
+        # подписчиками занимается соответствующая модель в users.models :)
         if user.is_anonymous:
             return self.annotate(
                 is_favorited=Value(
@@ -145,7 +147,6 @@ class Follow(models.Model):
         ordering = ('pk', )
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
-        # С такими выражениями впервые столкнулся :)
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'author'],

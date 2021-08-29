@@ -8,10 +8,10 @@ class UserQuerySet(models.QuerySet):
         """Filter followers and get related recipes."""
         queryset = self.filter(
             following__user=user
-        ).prefetch_related('recipes').annotate(
+        ).order_by('pk').prefetch_related('recipes').annotate(
             is_subscribed=Value(True, output_field=BooleanField()),
             recipes_count=Count('recipes__author')
-        ).order_by('-author__id')
+        )
         return queryset
 
 

@@ -77,8 +77,8 @@ class ListFavorSerializer(serializers.ModelSerializer):
         model = User
 
 
-class UserSerializerCom(serializers.ModelSerializer):
-    """Representate User model for Djoser backend."""
+class UserSerializer(serializers.ModelSerializer):
+    """Return User instance with additional fields."""
 
     is_subscribed = serializers.SerializerMethodField('get_is_subscribed')
 
@@ -91,12 +91,15 @@ class UserSerializerCom(serializers.ModelSerializer):
 
     def get_is_subscribed(self, author):
         request = self.context.get('request')
-        return Follow.objects.filter(
-            user=request.user, author=author
-        ).exists()
+        if request.user and request.user.is_authenticated:
+            return Follow.objects.filter(
+                user=request.user, author=author
+            ).exists()
+        return False
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializerCom(serializers.ModelSerializer):
+    """Representate User model for Djoser backend."""
 
     class Meta:
         model = User

@@ -1,7 +1,4 @@
 from django.http import HttpResponse
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
-from django.views.decorators.vary import vary_on_cookie
 from rest_framework import status, viewsets
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -52,11 +49,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context.update({'request': self.request})
         return context
-
-    @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(CACHE_TIMEOUT))
-    def dispatch(self, request, *args, **kwargs):
-        return super(RecipeViewSet, self).dispatch(request, *args, **kwargs)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

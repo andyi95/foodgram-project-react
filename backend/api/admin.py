@@ -15,11 +15,11 @@ class RecipeComponentAdmin(admin.TabularInline):
 
 class RecipeAdmin(admin.ModelAdmin):
     inlines = (RecipeComponentAdmin,)
-    list_display = ('pk', 'name', 'author_link', 'favorite_count', 'tag_list')
+    list_display = ('pk', 'pub_date', 'name', 'author_link', 'favorite_count', 'tag_list')
+    # sortable_by = ('pk', 'name', 'author_link')
     list_display_links = ('pk', 'name', )
-    search_fields = ('author', 'name')
+    search_fields = ('name', 'author_link')
     list_filter = ('tags', )
-    ordering = ('pk', )
 
     def author_link(self, obj):
         url = reverse('admin:users_user_change', args=[obj.author.id])
@@ -40,8 +40,10 @@ class RecipeAdmin(admin.ModelAdmin):
         )
         return queryset
 
+    # Версия развернута была последняя, но я допустил сразу несколько опечаток
     favorite_count.short_description = 'В избранном'
-    tag_list.short_desciptions = 'Тэги'
+    tag_list.short_description = 'Тэги'
+    author_link.short_description = 'Автор рецепта'
 
 
 class TagAdmin(admin.ModelAdmin):

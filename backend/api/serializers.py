@@ -58,7 +58,7 @@ class IngredientWriteSerializer(serializers.ModelSerializer):
         if not Ingredient.objects.filter(pk=attrs['id']).exists:
             raise serializers.ValidationError(
                 {
-                    'ingredients': f'Ингредениет с id {attrs["id"]} не найден'
+                    'ingredients': f'ингредиент с id {attrs["id"]} не найден'
                 },
             )
         if int(attrs['amount']) < 1:
@@ -119,6 +119,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                   'image', 'text', 'cooking_time')
 
     def validate(self, attrs):
+        cooking_time = self.initial_data.get('cooking_time')
+        if cooking_time is None or cooking_time < 1:
+            raise serializers.ValidationError(
+                {'cooking_time': 'Время приготовления не может быть меньше 1'}
+            )
         ingredients = self.initial_data.get('ingredients')
         if not ingredients:
             raise serializers.ValidationError(
@@ -178,10 +183,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     author = UserSerializer(read_only=True)
-
+    ingredients = serializers.SerializerMethodField('get_ingredients')
     is_favorited = serializers.BooleanField(read_only=True)
     is_in_shopping_cart = serializers.BooleanField(read_only=True)
-    ingredients = serializers.SerializerMethodField('get_ingredients')
 
     class Meta:
         model = Recipe
