@@ -3,8 +3,7 @@ from django.db.models import Count
 from django.urls import reverse
 from django.utils.html import mark_safe
 
-from api.models import (FavorRecipes, Follow, Ingredient, Recipe, ShoppingList,
-                        Tag)
+from api.models import FavorRecipes, Ingredient, Recipe, ShoppingList, Tag
 
 
 class RecipeComponentAdmin(admin.TabularInline):
@@ -54,10 +53,6 @@ class IngridientAdmin(admin.ModelAdmin):
     list_display = ('name', 'measurement_unit', 'id')
 
 
-class FollowAdmin(admin.ModelAdmin):
-    list_display = ('author', 'user')
-
-
 class FavorAdmin(admin.ModelAdmin):
     list_display = ('author', 'recipes')
 
@@ -70,6 +65,5 @@ class ShoppingCartAdmin(admin.ModelAdmin):
 admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(Ingredient, IngridientAdmin)
-admin.site.register(Follow, FollowAdmin)
 admin.site.register(FavorRecipes, FavorAdmin)
 admin.site.register(ShoppingList, ShoppingCartAdmin)

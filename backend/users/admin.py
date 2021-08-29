@@ -1,10 +1,15 @@
 from django.contrib import admin
 
-from users.models import User
+from users.models import Follow, User
 
 
 class UserAdmin(admin.ModelAdmin):
     list_display = ('username', 'email', 'first_name', 'last_name')
 
 
+class FollowAdmin(admin.ModelAdmin):
+    list_display = ('author', 'user')
+
+
 admin.site.register(User, UserAdmin)
+admin.site.register(Follow, FollowAdmin)

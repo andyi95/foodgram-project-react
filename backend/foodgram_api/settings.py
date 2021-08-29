@@ -8,8 +8,6 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 PAGE_SIZE = 6
-# Caching timeout in seconds
-CACHE_TIMEOUT = 60*60
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
@@ -135,6 +133,7 @@ REST_FRAMEWORK = {
 
 
 DJOSER = {
+    'HIDE_USERS': False,
     'SEND_ACTIVATION_EMAIL': False,
     'LOGIN_FIELD': 'email',
     'SEND_CONFIRMATION_EMAIL': False,
@@ -143,9 +142,8 @@ DJOSER = {
         'user_list': ['rest_framework.permissions.AllowAny'],
     },
     'SERIALIZERS': {
-        'user': 'users.serializers.UserSerializerCom',
+        'user': 'users.serializers.UserSerializer',
     },
-    'HID_USERS': False,
 }
 
 LANGUAGE_CODE = 'ru-RU'

@@ -126,39 +126,6 @@ class Recipe(models.Model):
         return self.name[:32]
 
 
-class Follow(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='follower',
-        verbose_name='Подписчики'
-    )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='following',
-        verbose_name='Подписки'
-    )
-
-    def __str__(self):
-        return f'Подписка{self.user.username} на {self.author.username}'
-
-    class Meta:
-        ordering = ('pk', )
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'author'],
-                name='follow_user_author_unique'
-            ),
-            models.CheckConstraint(
-                check=~models.Q(author=models.F('user')),
-                name='follower_equal_following'
-            ),
-        ]
-
-
 class ShoppingList(models.Model):
     recipes = models.ForeignKey(
         Recipe,

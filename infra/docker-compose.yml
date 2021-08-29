@@ -47,6 +47,3 @@ services:
       - redis
     env_file:
       - ./.env
-
-  redis:
-    image: redis:6.2.5

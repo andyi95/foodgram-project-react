@@ -61,11 +61,12 @@ class IngredientWriteSerializer(serializers.ModelSerializer):
                     'ingredients': f'ингредиент с id {attrs["id"]} не найден'
                 },
             )
-        if int(attrs['amount']) < 1:
+        if int(attrs['amount']) < 1 or int(attrs['amount']) > 32766:
             raise serializers.ValidationError(
                 {
                     'ingredients':
-                        'Количество ингредиента не может быть меньше 1'
+                        'Количество ингредиента не может быть меньше 1 '
+                        'и больше 32766'
                 }
             )
         return attrs
@@ -120,9 +121,16 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         cooking_time = self.initial_data.get('cooking_time')
-        if cooking_time is None or cooking_time < 1:
+        # Add some extra indentation on the conditional continuation line.
+        # lurk moar: https://www.python.org/dev/peps/pep-0008/#indentation
+        if (cooking_time is None or
+                int(cooking_time) < 1 or int(cooking_time) > 3276):
             raise serializers.ValidationError(
-                {'cooking_time': 'Время приготовления не может быть меньше 1'}
+                {
+                    'cooking_time':
+                        'Время приготовления не может быть меньше 1 '
+                        'и больше 32766'
+                }
             )
         ingredients = self.initial_data.get('ingredients')
         if not ingredients:

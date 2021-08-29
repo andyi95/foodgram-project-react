@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
-from api.models import Follow, Recipe
-from users.models import User
+from api.models import Recipe
+from users.models import Follow, User
 
 
 class RecipeTinySerializer(serializers.ModelSerializer):
