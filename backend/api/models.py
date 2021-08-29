@@ -43,6 +43,7 @@ class Ingredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+        ordering = ('pk', )
 
     def __str__(self):
         return f'{self.name}, {self.measurement_unit}'
@@ -67,6 +68,7 @@ class Tag(models.Model):
     class Meta:
         verbose_name = 'Тэг'
         verbose_name_plural = 'Тэги'
+        ordering = ('pk', )
 
     def __str__(self):
         return self.name
@@ -120,7 +122,7 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ('-pub_date', )
+        ordering = ('-pk', )
 
     def __str__(self):
         return self.name[:32]
@@ -149,6 +151,7 @@ class ShoppingList(models.Model):
                 name='shopping_author_recipes_unique'
             )
         ]
+        ordering = ('-pk', )
 
     def __str__(self):
         return f'{self.recipes.name} в корзине у {self.author.username}'
@@ -178,6 +181,7 @@ class FavorRecipes(models.Model):
         ]
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
+        ordering = ('-pk', )
 
     def __str__(self):
         return f'{self.recipes.name} в избранном у {self.author.username}'
@@ -229,6 +233,7 @@ class RecipeComponent(models.Model):
                 fields=['ingredient', 'recipe']
             )
         ]
+        ordering = ('-pk', )
 
     def __str__(self):
         return self.ingredient.name

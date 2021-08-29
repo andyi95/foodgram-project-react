@@ -11,9 +11,7 @@ FILTER_CHOICES = (
 class RecipeFilter(filters.FilterSet):
     """Filter by prefetched fields 'is_favorited', 'is_in_shopping_', etc."""
 
-    tags = filters.AllValuesMultipleFilter(
-        field_name='tags__slug'
-    )
+    tags = filters.AllValuesMultipleFilter(field_name='tags__slug')
     is_favorited = filters.BooleanFilter(method='fav_filter')
     is_in_shopping_cart = filters.BooleanFilter(method='shop_filter')
 

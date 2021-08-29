@@ -14,14 +14,10 @@ class RecipeComponentAdmin(admin.TabularInline):
 
 class RecipeAdmin(admin.ModelAdmin):
     inlines = (RecipeComponentAdmin,)
-    # Add date in order to allow custom sorting by date, Django doesn't allow
-    # to sort by pk as it's not an explicit field of model.
-    list_display = (
-        'pk', 'name', 'author_link', 'favorite_count', 'tag_list', 'pub_date'
-    )
-    list_display_links = ('pk', 'name', )
-    search_fields = ('name', 'author_link')
-    list_filter = ('tags', )
+    list_display = ('id', 'name', 'author_link', 'favorite_count', 'tag_list')
+    list_display_links = ('id', 'name')
+    search_fields = ('name', 'text', 'ingredients__name')
+    list_filter = ('tags', 'author')
 
     def author_link(self, obj):
         url = reverse('admin:users_user_change', args=[obj.author.id])
@@ -49,11 +45,13 @@ class RecipeAdmin(admin.ModelAdmin):
 
 
 class TagAdmin(admin.ModelAdmin):
-    list_display = ('name', )
+    list_display = ('name', 'id')
 
 
 class IngridientAdmin(admin.ModelAdmin):
     list_display = ('name', 'measurement_unit', 'id')
+    search_fields = ('name', )
+    list_filter = ('measurement_unit', )
 
 
 class FavorAdmin(admin.ModelAdmin):
@@ -61,8 +59,11 @@ class FavorAdmin(admin.ModelAdmin):
 
 
 class ShoppingCartAdmin(admin.ModelAdmin):
-    fields = ('author', 'recipes')
-    search_fields = ('author', 'recipes')
+    list_display = ('author', 'recipes')
+    search_fields = (
+        'recipes__name', 'recipes__text',
+        'author__first_name', 'author__last_name'
+    )
 
 
 admin.site.register(Recipe, RecipeAdmin)

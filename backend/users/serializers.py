@@ -96,12 +96,3 @@ class UserSerializer(serializers.ModelSerializer):
                 user=request.user, author=author
             ).exists()
         return False
-
-
-class UserSerializerCom(serializers.ModelSerializer):
-    """Representate User model for Djoser backend."""
-
-    class Meta:
-        model = User
-        fields = ('email', 'id', 'username',
-                  'first_name', 'last_name')

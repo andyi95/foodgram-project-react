@@ -2,10 +2,10 @@ import json
 
 from django.db import migrations
 
+
 def init_db(apps, schema_editor):
-    """
-    Creates Tag and Ingredient instances with given datasets
-    """
+    """Create Tag and Ingredient instances with given datasets."""
+
     Ingredient = apps.get_model('api', 'Ingredient')
     Tag = apps.get_model('api', 'Tag')
     tags = [

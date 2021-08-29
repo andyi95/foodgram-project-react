@@ -3,7 +3,6 @@ from django.urls import include, path
 
 from foodgram_api import settings
 
-
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),

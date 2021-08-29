@@ -112,7 +112,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     cooking_time = serializers.IntegerField()
     ingredients = IngredientWriteSerializer(many=True)
     author = UserSerializer(read_only=True)
-    image = Base64ImageField(max_length=None, use_url=True, required=False)
+    image = Base64ImageField(max_length=None, use_url=True)
 
     class Meta:
         model = Recipe
@@ -122,9 +122,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         cooking_time = self.initial_data.get('cooking_time')
         # Add some extra indentation on the conditional continuation line.
-        # lurk moar: https://www.python.org/dev/peps/pep-0008/#indentation
+        # learn more: https://www.python.org/dev/peps/pep-0008/#indentation
         if (cooking_time is None or
-                int(cooking_time) < 1 or int(cooking_time) > 3276):
+                int(cooking_time) < 1 or int(cooking_time) > 32766):
             raise serializers.ValidationError(
                 {
                     'cooking_time':
