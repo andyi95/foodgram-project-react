@@ -44,5 +44,9 @@ services:
       - media_value:/code/media
     depends_on:
       - db
+      - redis
     env_file:
       - ./.env
+
+  redis:
+    image: redis:6.2.5

@@ -14,7 +14,6 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = bool(util.strtobool(os.getenv('DEBUG_MODE')))
 
 ALLOWED_HOSTS = os.environ.get('HOSTNAME').split()
-# fix admin access issue
 ALLOWED_HOSTS.append('back')
 
 INSTALLED_APPS = [
@@ -32,6 +31,7 @@ INSTALLED_APPS = [
     'djoser',
     'users',
     'api',
+    'cachalot',
 ]
 
 MIDDLEWARE = [
@@ -126,6 +126,16 @@ DJOSER = {
     },
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis:6379",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
 LANGUAGE_CODE = 'ru-RU'
 TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
@@ -141,3 +151,30 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 if DEBUG:
     INSTALLED_APPS.append('debug_toolbar')
     MIDDLEWARE.append('debug_toolbar.middleware.DebugToolbarMiddleware')
+    LOGGING = {
+        'version': 1,
+        'filters': {
+            'require_debug_true': {
+                '()': 'django.utils.log.RequireDebugTrue',
+            }
+        },
+        'handlers': {
+            'console': {
+                'level': 'DEBUG',
+                'filters': ['require_debug_true'],
+                'class': 'logging.StreamHandler',
+            }
+        },
+        'loggers': {
+            'django.db.backends': {
+                'level': 'DEBUG',
+                'handlers': ['console'],
+            }
+        }
+    }
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+        }
+    }

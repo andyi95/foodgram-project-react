@@ -8,6 +8,7 @@ chardet==4.0.0
 click==7.1.2
 Django==3.1.12
 django-redis
+django-cachalot==2.4.3
 django-csvimport==2.16
 django-debug-toolbar==3.2.1
 django-filter==2.4.0

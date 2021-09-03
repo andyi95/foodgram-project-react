@@ -1,4 +1,7 @@
+from django.core.cache import cache
 from django.http import HttpResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from rest_framework import status, viewsets
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -23,10 +26,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super(RecipeViewSet, self).get_queryset()
+        queryset = cache.get('recipes_qs')
+        if not queryset:
+            queryset = super(RecipeViewSet, self).get_queryset()
+            cache.set('recipes_qs', queryset)
         if user.is_anonymous or user is None:
             return queryset
-        return queryset.opt_annotations(user)
+        user_qs = cache.get('recipes_user_%s' % user.id)
+        if not user_qs:
+            user_qs = queryset.opt_annotations(user)
+            cache.set('recipes_user_%s' % user.id, user_qs)
+        return user_qs
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -57,6 +67,13 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     filter_class = IngredientFilter
     search_fields = ['name', ]
     pagination_class = None
+
+    def get_queryset(self):
+        queryset = cache.get('ingredients_qs')
+        if not queryset:
+            queryset = Ingredient.objects.all()
+            cache.set('ingredients_qs', queryset)
+        return queryset
 
 
 class CommonViewSet(APIView):
@@ -115,6 +132,7 @@ class ShoppingViewSet(CommonViewSet):
 class ShoppingCartDL(APIView):
     permission_classes = [IsAuthenticated]
 
+    @method_decorator(cache_page(60 * 60))
     def get(self, request):
         """Download a shopping list with aggregated sum of ingredients."""
         user = request.user
