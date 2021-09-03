@@ -1,5 +1,15 @@
+[en](README-en.md) | ru
+
 # Foodgram React Project
 [![Foodgram app workflow](https://github.com/andyi95/foodgram-project-react/actions/workflows/foodgram.yml/badge.svg)](https://github.com/andyi95/foodgram-project-react/actions/workflows/foodgram.yml)
+![GitHub](https://img.shields.io/github/license/andyi95/foodgram-project-react?logoColor=2b3137)
+
+[![Python](https://img.shields.io/static/v1?style=flat&message=Python&color=5a5a5a&logo=Python&logoColor=FFFFFF&label=)](https://www.python.org/)
+[![Django](https://img.shields.io/static/v1?style=flat&message=Django&color=5a5a5a&logo=Django&logoColor=FFFFFF&label=)](https://www.djangoproject.com/)
+[![NGINX](https://img.shields.io/static/v1?style=flat&message=NGINX&color=5a5a5a&logo=NGINX&logoColor=FFFFFF&label=)](https://nginx.org/)
+[![PostgreSQL](https://img.shields.io/static/v1?style=flat&message=PostgreSQL&color=5a5a5a&logo=PostgreSQL&logoColor=FFFFFF&label=)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/static/v1?style=flat&message=Docker&color=5a5a5a&logo=Docker&logoColor=FFFFFF&label=)](https://www.docker.com/)
+ 
 ## Описание
 
 **Foodgram** веб-приложение для обмена рецептами с элементами социальной сети, позволяющее создавать рецепты, устанавливать собственные теги, ингредиенты и списки покупок. При создании использовался следующий стек технологий: Python3, Django Rest Framework, PostgreSQL, Gunicorn, Docker.
